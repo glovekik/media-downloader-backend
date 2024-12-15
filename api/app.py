@@ -1,69 +1,46 @@
-import yt_dlp
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import re
-from urllib.parse import urlparse, urlunparse, parse_qs
+import yt_dlp
 
 app = Flask(__name__)
 
-# Allow cross-origin requests from the frontend
-CORS(app, origins=["https://glovekik.github.io"], methods=["GET", "POST"], supports_credentials=True)
+# Configure CORS to allow frontend from https://glovekik.github.io
+CORS(app, origins=["https://glovekik.github.io"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 
-# Function to clean the YouTube URL
-def clean_url(url):
-    # Parse the URL
-    parsed_url = urlparse(url)
-
-    # Remove query parameters like 'si' and keep the essential ones
-    query = parse_qs(parsed_url.query)
-    query.pop('si', None)  # Remove 'si' query parameter (if exists)
-
-    # Rebuild the URL without the 'si' parameter
-    cleaned_url = urlunparse(parsed_url._replace(query='&'.join(f'{k}={v[0]}' for k, v in query.items())))
-
-    return cleaned_url
-
-
-# Function to download the audio from a YouTube video
+# Function to download audio from YouTube
 def download_audio(link):
     ydl_opts = {
-        'format': 'bestaudio/best',  # Download the best available audio format
-        'outtmpl': 'downloads/audio_download.%(ext)s',  # Save to a specific directory
-        'noplaylist': True,  # Download only the single video (not the playlist)
-        'quiet': False,  # Show download progress in the logs
+        'format': 'bestaudio/best',
+        'outtmpl': 'downloads/audio_download.%(ext)s',
+        'noplaylist': True,
+        'quiet': False,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])  # Download the audio
-        return "Download Finished!"  # Return success message
+            ydl.download([link])
+        return "Download Finished!"
     except yt_dlp.utils.DownloadError as e:
-        return f"Download Error: {str(e)}"  # Return specific download error message
+        return f"Download Error: {str(e)}"
     except Exception as e:
-        return f"An unexpected error occurred: {str(e)}"  # General error handling
+        return f"An unexpected error occurred: {str(e)}"
 
 
-# Define the endpoint for downloading audio
+# Define endpoint for downloading audio
 @app.route('/download', methods=['POST'])
 def download():
-    data = request.get_json()  # Get the JSON data from the frontend
-    link = data.get('link')  # Extract the YouTube link from the JSON request
+    data = request.get_json()
+    link = data.get('link')
 
-    # Check if the link is provided
     if not link:
-        return jsonify({"error": "No link provided"}), 400  # Return an error if no link is provided
+        return jsonify({"error": "No link provided"}), 400
 
-    # Improved validation for YouTube URLs (accepts youtube.com and youtu.be)
-    youtube_regex = r"^(https?://)?(www\.)?(youtube|youtu)\.com/.*$"
-    if not re.match(youtube_regex, link):
+    if not link.startswith("https://www.youtube.com"):
         return jsonify({"error": "Invalid YouTube link"}), 400
 
-    # Clean the URL (remove unnecessary parameters like 'si')
-    cleaned_link = clean_url(link)
-
-    result = download_audio(cleaned_link)  # Call the download function for the cleaned link
-    return jsonify({"message": result})  # Return the result (success or error) as a JSON response
+    result = download_audio(link)
+    return jsonify({"message": result})
 
 
 if __name__ == "__main__":
