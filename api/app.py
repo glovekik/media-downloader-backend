@@ -1,11 +1,14 @@
 import yt_dlp
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
 
+# Allow cross-origin requests from the frontend
+CORS(app, origins=["https://glovekik.github.io"], methods=["GET", "POST"])
+
 # Function to download the audio from a YouTube video
 def download_audio(link):
-    # yt-dlp options for downloading the best available audio
     ydl_opts = {
         'format': 'bestaudio/best',           # Download the best available audio format
         'outtmpl': 'audio_download.%(ext)s',   # Output file name (with extension)
