@@ -1,9 +1,15 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/download",
-      "destination": "https://media-downloader-backend-nine.vercel.app/download"
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/download",
+      "dest": "/app.py"
     }
   ]
 }
