@@ -8,8 +8,8 @@ import logging
 # Create the Flask app
 app = Flask(__name__)
 
-# Configure CORS to allow frontend from https://glovekik.github.io
-CORS(app, origins=["https://glovekik.github.io/media-downloader/"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
+# Configure CORS to allow frontend from https://glovekik.github.io (adjusted for sub-paths)
+CORS(app, origins=["https://glovekik.github.io"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 # Ensure the 'downloads' directory exists or use temporary storage for deployments
 DOWNLOAD_DIR = "/tmp/downloads"  # For cloud deployment environments like Vercel
