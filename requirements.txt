@@ -1,3 +1,5 @@
 Flask
 yt-dlp
 flask-cors
+flask>=2.1.0
+werkzeug>=2.1.0
