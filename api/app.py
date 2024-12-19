@@ -1,17 +1,14 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import yt_dlp
 from datetime import datetime
-import os
-import logging
 
 app = Flask(__name__)
-CORS(app, origins=["https://glovekik.github.io", "http://127.0.0.1:5500"], methods=["GET", "POST"], supports_credentials=True)
+CORS(app, origins=["https://glovekik.github.io", "http://127.0.0.1:5500"])
 
-DOWNLOAD_DIR = "/tmp/downloads"  # Use tmp directory for Railway
+DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-logging.basicConfig(level=logging.DEBUG)
 
 def download_audio(link):
     ydl_opts = {
@@ -20,28 +17,32 @@ def download_audio(link):
         'noplaylist': True,
         'quiet': True,
     }
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(link, download=True)
-            filename = ydl.prepare_filename(info_dict)
-            return os.path.basename(filename)
-    except Exception as e:
-        app.logger.error(f"Download failed: {str(e)}")
-        return None
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(link, download=True)
+        file_path = ydl.prepare_filename(info_dict)
+        return file_path
 
 @app.route('/download', methods=['POST'])
 def download():
-    data = request.get_json()
-    link = data.get('link')
-    if not link or not (link.startswith("https://www.youtube.com") or link.startswith("https://youtu.be")):
-        return jsonify({"error": "Invalid YouTube link"}), 400
+    try:
+        data = request.get_json()
+        link = data.get('link')
 
-    filename = download_audio(link)
-    if not filename:
-        return jsonify({"error": "Failed to download the audio"}), 500
+        if not link or not (link.startswith("https://www.youtube.com") or link.startswith("https://youtu.be")):
+            return jsonify({"error": "Invalid YouTube link"}), 400
 
-    return jsonify({"message": "Download successful", "downloadUrl": f"/static/{filename}"})
+        file_path = download_audio(link)
+        file_name = os.path.basename(file_path)
+        return jsonify({"downloadUrl": f"/file/{file_name}"})
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/file/<filename>', methods=['GET'])
+def serve_file(filename):
+    file_path = os.path.join(DOWNLOAD_DIR, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
+    return jsonify({"error": "File not found"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)
