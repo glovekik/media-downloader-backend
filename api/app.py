@@ -5,7 +5,7 @@ import yt_dlp
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, origins=["https://glovekik.github.io", "http://127.0.0.1:5500"])
+CORS(app, origins=["https://glovekik.github.io/media-downloader/", "http://127.0.0.1:5500"])
 
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
