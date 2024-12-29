@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Enable CORS for all routes and origins
-CORS(app, origins=["https://media-downloader-omega.vercel.app", "http://127.0.0.1:5500"], supports_credentials=True)
+CORS(app, origins=["https://media-downloader-f6xvt84xm-lovekiks-projects.vercel.app/", "http://127.0.0.1:5500"], supports_credentials=True)
 
 # Directory for saving downloads
 DOWNLOAD_DIR = "/tmp/downloads"
