@@ -7,7 +7,7 @@ import uuid
 app = Flask(__name__)
 
 # Enable CORS for specific domains or all
-CORS(app, resources={r"/*": {"origins": ["https://media-downloader-f6xvt84xm-lovekiks-projects.vercel.app"]}})
+CORS(app, resources={r"/*": {"origins": ["https://media-downloader-fullversion.vercel.app/"]}})
 
 # Temporary directory for downloads
 DOWNLOAD_DIR = "/tmp/downloads"
