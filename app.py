@@ -5,7 +5,7 @@ import os
 import uuid
 
 app = Flask(__name__)
-CORS(app, origins=["https://media-downloader-mauve.vercel.app/", "http://127.0.0.1:5500"])
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Directory for saving downloads
 DOWNLOAD_DIR = "/tmp/downloads"
@@ -18,6 +18,7 @@ def download_audio(link):
         'outtmpl': os.path.join(DOWNLOAD_DIR, f'%(title)s-{uuid.uuid4()}.%(ext)s'),
         'noplaylist': True,
         'quiet': False,
+        'cookiefile': '/path/to/cookies.txt',  # Add cookies for restricted videos
     }
 
     try:
@@ -26,8 +27,9 @@ def download_audio(link):
             filename = ydl.prepare_filename(info_dict)
             return filename  # Return full file path
     except Exception as e:
-        print(f"Download error: {e}")
-        return str(e)
+        error_message = f"Download error: {e}"
+        print(error_message)
+        return {"error": error_message}
 
 @app.route('/download', methods=['POST'])
 def download():
@@ -41,12 +43,17 @@ def download():
         return jsonify({"error": "Invalid YouTube link"}), 400
 
     downloaded_file = download_audio(link)
-    if "Error" in downloaded_file:
-        return jsonify({"error": downloaded_file}), 500
+    if isinstance(downloaded_file, dict):  # Check if an error occurred
+        return jsonify(downloaded_file), 500
+
+    if not os.path.exists(downloaded_file):
+        return jsonify({"error": "File not found after download"}), 500
 
     try:
-        # Use send_file to directly serve the downloaded file
-        return send_file(downloaded_file, as_attachment=True)
+        # Serve the file
+        response = send_file(downloaded_file, as_attachment=True)
+        os.remove(downloaded_file)  # Remove the file after serving
+        return response
     except Exception as e:
         return jsonify({"error": f"File download failed: {str(e)}"}), 500
 
