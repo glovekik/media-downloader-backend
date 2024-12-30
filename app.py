@@ -5,7 +5,9 @@ import os
 import uuid
 
 app = Flask(__name__)
-CORS(app, origins=["https://media-downloader-mauve.vercel.app/", "http://127.0.0.1:5500"])
+
+# Allow requests from the frontend URL
+CORS(app, origins=["https://media-downloader-mauve.vercel.app", "http://127.0.0.1:5500"])
 
 # Directory for saving downloads
 DOWNLOAD_DIR = "/tmp/downloads"
@@ -13,15 +15,11 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 # Function to download audio from YouTube
 def download_audio(link):
-    # Path to the cookies file exported from your browser
-    cookies_path = '/path/to/your/cookies.txt'
-
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, f'%(title)s-{uuid.uuid4()}.%(ext)s'),
         'noplaylist': True,
         'quiet': False,
-        'cookies': cookies_path,  # Specify path to your cookies.txt
     }
 
     try:
@@ -33,8 +31,12 @@ def download_audio(link):
         print(f"Download error: {e}")
         return str(e)
 
-@app.route('/download', methods=['POST'])
+@app.route('/download', methods=['POST', 'OPTIONS'])
 def download():
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        return '', 200
+
     data = request.get_json()
     link = data.get('link')
 
