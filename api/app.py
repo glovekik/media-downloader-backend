@@ -6,8 +6,8 @@ import uuid
 
 app = Flask(__name__)
 
-# Configure CORS to allow requests from your frontend
-CORS(app, resources={r"/*": {"origins": ["https://media-downloader-mauve.vercel.app"]}})
+# Modify CORS to allow requests from the specific frontend domain
+CORS(app, origins=["https://media-downloader-mauve.vercel.app", "http://127.0.0.1:5500"])
 
 # Directory for saving downloads
 DOWNLOAD_DIR = "/tmp/downloads"
@@ -31,7 +31,6 @@ def download_audio(link):
         print(f"Download error: {e}")
         return str(e)
 
-# Route for downloading YouTube audio
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
@@ -52,14 +51,6 @@ def download():
         return send_file(downloaded_file, as_attachment=True)
     except Exception as e:
         return jsonify({"error": f"File download failed: {str(e)}"}), 500
-
-# Add CORS headers for preflight requests
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "https://media-downloader-mauve.vercel.app"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return response
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
