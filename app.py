@@ -3,15 +3,19 @@ from flask_cors import CORS
 import yt_dlp
 import os
 import uuid
+import logging
 
 app = Flask(__name__)
 
-# Allow requests from the frontend URL
+# Allow requests from specific origins
 CORS(app, origins=["https://media-downloader-mauve.vercel.app", "http://127.0.0.1:5500"])
 
 # Directory for saving downloads
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+# Logging setup
+logging.basicConfig(level=logging.DEBUG)
 
 # Function to download audio from YouTube
 def download_audio(link):
@@ -20,21 +24,26 @@ def download_audio(link):
         'outtmpl': os.path.join(DOWNLOAD_DIR, f'%(title)s-{uuid.uuid4()}.%(ext)s'),
         'noplaylist': True,
         'quiet': False,
+        'postprocessors': [
+            {'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'},
+        ],
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(link, download=True)
             filename = ydl.prepare_filename(info_dict)
-            return filename  # Return full file path
+            if filename.endswith(".webm"):
+                filename = filename.replace(".webm", ".mp3")  # Handle ffmpeg audio conversion
+            return filename
     except Exception as e:
-        print(f"Download error: {e}")
-        return str(e)
+        logging.error(f"Error downloading video: {e}")
+        return f"Error: {str(e)}"
 
 @app.route('/download', methods=['POST', 'OPTIONS'])
 def download():
     if request.method == 'OPTIONS':
-        # Handle preflight request
+        # Handle CORS preflight
         return '', 200
 
     data = request.get_json()
@@ -47,14 +56,19 @@ def download():
         return jsonify({"error": "Invalid YouTube link"}), 400
 
     downloaded_file = download_audio(link)
-    if "Error" in downloaded_file:
+    if downloaded_file.startswith("Error"):
         return jsonify({"error": downloaded_file}), 500
 
     try:
-        # Use send_file to directly serve the downloaded file
+        # Serve the file as an attachment
         return send_file(downloaded_file, as_attachment=True)
     except Exception as e:
+        logging.error(f"File serving error: {e}")
         return jsonify({"error": f"File download failed: {str(e)}"}), 500
+    finally:
+        # Clean up downloaded file
+        if os.path.exists(downloaded_file):
+            os.remove(downloaded_file)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
