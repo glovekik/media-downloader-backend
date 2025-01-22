@@ -24,9 +24,11 @@ def download_audio(link):
         'outtmpl': os.path.join(DOWNLOAD_DIR, f'%(title)s-{uuid.uuid4()}.%(ext)s'),
         'noplaylist': True,
         'quiet': False,
-        'postprocessors': [
-            {'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'},
-        ],
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+        # Uncomment the following line if cookies are required for certain videos
+        # 'cookiefile': 'cookies.txt',
     }
 
     try:
@@ -37,7 +39,7 @@ def download_audio(link):
                 filename = filename.replace(".webm", ".mp3")  # Handle ffmpeg audio conversion
             return filename
     except Exception as e:
-        logging.error(f"Error downloading video: {e}")
+        logging.error(f"Download error: {e}")
         return f"Error: {str(e)}"
 
 @app.route('/download', methods=['POST', 'OPTIONS'])
